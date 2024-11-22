@@ -51,7 +51,6 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombra sutil para destacar */
         }
 
-
         .hamburger-menu {
             position: fixed;
             top: 10px;
@@ -89,24 +88,52 @@
             margin-bottom: 20px;
         }
 
-        button {
+        .switch {
+            display: flex;
+            align-items: center;
             margin: 5px 0;
-            padding: 10px;
-            width: 100%;
-            border: none;
-            background-color: #4CAF50;
-            color: white;
+        }
+
+        .switch input[type="checkbox"]:disabled {
+            background: gray;
+            cursor: not-allowed;
+        }
+
+        .switch input[type="checkbox"] {
+            appearance: none;
+            width: 50px;
+            height: 25px;
+            background: #f78282;
+            border-radius: 25px;
+            position: relative;
+            outline: none;
             cursor: pointer;
-            border-radius: 5px;
+            transition: background 0.3s;
         }
 
-        button:hover {
-            background-color: #45a049;
+        .switch input[type="checkbox"]:checked {
+            background: #4CAF50;
         }
 
-        input[type="checkbox"] {
-            transform: scale(1.5);
+        .switch input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 19px;
+            height: 19px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .switch input[type="checkbox"]:checked::before {
+            transform: translateX(25px);
+        }
+
+        .switch label {
             margin-left: 10px;
+            cursor: pointer;
         }
 
         @media (max-width: 600px) {
@@ -147,12 +174,13 @@
                 overflow-y: auto;
                 display: block;
             }
-
         }
     </style>
 </head>
 <body>
     <div class="hamburger-menu" onclick="toggleControls()">☰</div>
+
+    <h1 style="width: 100vw; text-align: center; margin-top: 15px;">Estufa Inteligente</h1>
 
     <div class="data-container">
         <div class="data">
@@ -173,28 +201,36 @@
         <h2>Controles</h2>
         
         <div class="control-section">
-            <h3>Umidade</h3>
-            <button onclick="sendCommand('ligarIrrigador', 'ON')">Ligar Irrigador</button>
-            <button onclick="sendCommand('ligarIrrigador', 'OFF')">Desligar Irrigador</button>
+            <h4>Umidade</h4>
+            <div class="switch">
+                <input type="checkbox" id="irrigador" onchange="sendCommand('ligarIrrigador', this.checked ? 'ON' : 'OFF')">
+                <label for="irrigador">Irrigador</label>
+            </div>
         </div>
     
         <div class="control-section">
-            <h3>Temperatura</h3>
-            <button onclick="sendCommand('ligarAquecedor', 'ON')">Ligar Aquecedor</button>
-            <button onclick="sendCommand('ligarAquecedor', 'OFF')">Desligar Aquecedor</button>
-            <button onclick="sendCommand('ligarRefrigerador', 'ON')">Ligar Refrigerador</button>
-            <button onclick="sendCommand('ligarRefrigerador', 'OFF')">Desligar Refrigerador</button>
+            <h4>Temperatura</h4>
+            <div class="switch">
+                <input type="checkbox" id="aquecedor" onchange="sendCommand('ligarAquecedor', this.checked ? 'ON' : 'OFF')">
+                <label for="aquecedor">Aquecedor</label>
+            </div>
+            <div class="switch">
+                <input type="checkbox" id="refrigerador" onchange="sendCommand('ligarRefrigerador', this.checked ? 'ON' : 'OFF')">
+                <label for="refrigerador">Refrigerador</label>
+            </div>
         </div>
 
         <div class="control-section">
-            <h3>Luminosidade</h3>
-            <button onclick="sendCommand('ligarLampada', 'ON')">Ligar Lâmpada</button>
-            <button onclick="sendCommand('ligarLampada', 'OFF')">Desligar Lâmpada</button>
+            <h4>Luminosidade</h4>
+            <div class="switch">
+                <input type="checkbox" id="lampada" onchange="sendCommand('ligarLampada', this.checked ? 'ON' : 'OFF')">
+                <label for="lampada">Lâmpada</label>
+            </div>
         </div>
         
         <div class="control-section">
             <label>Piloto Automático:</label>
-            <input type="checkbox" onchange="toggleAutoMode(this.checked)">
+            <input type="checkbox" id="autoMode" onchange="toggleAutoMode(this.checked)">
         </div>
     </div>
 
@@ -261,26 +297,42 @@
                     .catch(() => {
                         attemptReconnect();
                     });
-            }, 5000);
+            }, 1000);
         }
-        
-        function sendCommand(channel, command) {
-            console.log("Enviando comando:", channel, command);
-            fetch('/send_command', {
+
+        function sendCommand(endpoint, state) {
+            console.log(`Enviando comando para ${endpoint} com estado ${state}`);
+            fetch(`/${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channel: channel, command: command })
-            }).then(response => {
-                if (!response.ok) throw new Error('Falha ao enviar comando');
-                console.log("Comando enviado com sucesso!");
-            }).catch(error => console.error(error));
+                body: JSON.stringify({ state }),
+            })
+            .then(response => response.ok ? console.log('Comando enviado!') : console.error('Erro ao enviar comando'))
+            .catch(console.error);
         }
-        
-        function toggleAutoMode(isEnabled) {
-            console.log("Modo automático", isEnabled ? "ativado" : "desativado");
-            sendCommand('pilotoAutomatico', isEnabled ? 'ON' : 'OFF');
+
+        function toggleAutoMode(isAuto) {
+        const controls = document.querySelectorAll(
+            "#irrigador, #aquecedor, #refrigerador, #lampada"
+        );
+
+        if (isAuto) {
+            clearInterval(interval);
+            interval = setInterval(fetchSensorData, 500);
+
+            controls.forEach(control => {
+                control.disabled = true;
+                control.checked = false;
+            });
+        } else {
+            clearInterval(interval);
+            interval = setInterval(fetchSensorData, 1000);
+
+            controls.forEach(control => {
+                control.disabled = false;
+            });
         }
-        
+    }
     </script>
 </body>
 </html>
