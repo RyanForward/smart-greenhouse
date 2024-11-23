@@ -63,13 +63,19 @@ def send_command():
     return jsonify(success=True)
 
 
-if __name__ == '__main__':
+if __name__ == '_main_':
     # Abre a interface no navegador automaticamente apenas uma vez
+    #port = 5000
+    #url = f"http://127.0.0.1:{port}"
+    #print(f"Abra seu navegador e acesse {url}")
+    
+    # Abre o navegador automaticamente apenas uma vez
+    #webbrowser.open(url)
+    
+    host_ip = '10.0.0.188'  # Substitua com seu IP
     port = 5000
-    # url = f"http://127.0.0.1:{port}"
-    # print(f"Abra seu navegador e acesse {url}")
+    print(f"Abra seu navegador e acesse http://{host_ip}:{port}")
     
-    # # Abre o navegador automaticamente apenas uma vez
-    # webbrowser.open(url)
+    app.run(host=host_ip, port=port)
     
-    app.run(host='18.117.176.188', port=port)
+    #app.run(port=port)
