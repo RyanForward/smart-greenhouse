@@ -72,4 +72,4 @@ if __name__ == '__main__':
     # # Abre o navegador automaticamente apenas uma vez
     # webbrowser.open(url)
     
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='18.117.176.188', port=port)
