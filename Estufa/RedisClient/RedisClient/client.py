@@ -7,7 +7,7 @@ import webbrowser
 app = Flask(__name__)
 
 # Configuração do Redis
-r = redis.Redis(host='10.0.0.185', port=6379, db=0)
+r = redis.Redis(host='2804:760:5d02:dd00:e6f3:d8c5:681e:e053', port=6379, db=0)
 sensor_data = {'readLuminosidade': '', 'readTemperatura': '', 'readUmidade': ''}
 auto_mode = False
 
