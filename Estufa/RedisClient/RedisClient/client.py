@@ -66,10 +66,10 @@ def send_command():
 if __name__ == '__main__':
     # Abre a interface no navegador automaticamente apenas uma vez
     port = 5000
-    url = f"http://127.0.0.1:{port}"
-    print(f"Abra seu navegador e acesse {url}")
+    # url = f"http://127.0.0.1:{port}"
+    # print(f"Abra seu navegador e acesse {url}")
     
-    # Abre o navegador automaticamente apenas uma vez
-    webbrowser.open(url)
+    # # Abre o navegador automaticamente apenas uma vez
+    # webbrowser.open(url)
     
-    app.run(port=port)
+    app.run(host='0.0.0.0', port=port)
