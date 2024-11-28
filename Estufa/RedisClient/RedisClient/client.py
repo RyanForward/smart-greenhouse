@@ -6,12 +6,10 @@ import webbrowser
 
 app = Flask(__name__)
 
-# Configuração do Redis
-r = redis.Redis(host='2804:760:5d02:dd00:e6f3:d8c5:681e:e053', port=6379, db=0)
+r = redis.Redis(host='200.235.94.128', port=6379, db=0)
 sensor_data = {'readLuminosidade': '', 'readTemperatura': '', 'readUmidade': ''}
 auto_mode = False
 
-# Função para ouvir os dados do servidor
 def listen_to_sensors():
     pubsub = r.pubsub()
     pubsub.subscribe(['readLuminosidade', 'readTemperatura', 'readUmidade'])
@@ -20,62 +18,53 @@ def listen_to_sensors():
         if message['type'] == 'message':
             channel = message['channel'].decode('utf-8')
             data = message['data'].decode('utf-8')
-            # Atualiza os dados de sensor apenas com a nova mensagem
             sensor_data[channel] = data
 
-# Rota principal para renderizar o HTML
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# Rota para o frontend buscar dados de sensores
 @app.route('/get_data')
 def get_data():
     try:
-        # Tenta se conectar ao Redis
         print('sensor_data: ', sensor_data['readLuminosidade'])
         if sensor_data['readLuminosidade'] != '404':
             return jsonify(sensor_data)
         else:
             return
     except redis.exceptions.ConnectionError:
-        # Retorna um erro caso o Redis esteja inativo
         return jsonify({"error": "Redis server is unavailable"}), 503
 
 
-# Inicia a thread para ouvir os dados do servidor
 threading.Thread(target=listen_to_sensors, daemon=True).start()
 
-# Rota para receber comandos do frontend
 @app.route('/send_command', methods=['POST'])
 def send_command():
     global auto_mode
     data = request.get_json()
-    channel = data['channel']
-    command = data['command']
+    
+    channel = data.get('channel') 
+    command = data.get('command')
+
+    if not channel or not command:
+        return jsonify(success=False, error="Dados inválidos"), 400
 
     if channel == "pilotoAutomatico":
-        auto_mode = command == "ON"
+        auto_mode = command.upper() == "ON"
         r.publish('pilotoAutomatico', command)
     else:
         r.publish(channel, command)
 
+    print(f"Comando '{command}' enviado para '{channel}'")
     return jsonify(success=True)
 
 
 if __name__ == '__main__':
-    # Abre a interface no navegador automaticamente apenas uma vez
-    #port = 5000
-    #url = f"http://127.0.0.1:{port}"
-    #print(f"Abra seu navegador e acesse {url}")
     
-    # Abre o navegador automaticamente apenas uma vez
-    #webbrowser.open(url)
-    
-    host_ip = '0.0.0.0'  # Substitua com seu IP
+    host_ip = '0.0.0.0'
     port = 5000
     print(f"Abra seu navegador e acesse http://{host_ip}:{port}")
+    url = f"http://127.0.0.1:{port}"
+    webbrowser.open(url)
     
     app.run(host=host_ip, port=port)
-    
-    #app.run(port=port)

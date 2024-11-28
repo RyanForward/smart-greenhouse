@@ -45,10 +45,10 @@
         .controls.open {
             right: 0;
             color: #000000;
-            background-color: rgba(231, 231, 231, 0.11); /* Fundo semi-transparente */
-            backdrop-filter: blur(10px); /* Efeito de desfoque */
-            border-radius: 10px; /* Bordas arredondadas para um visual mais suave */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombra sutil para destacar */
+            background-color: rgba(231, 231, 231, 0.11); 
+            backdrop-filter: blur(10px);
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .hamburger-menu {
@@ -267,7 +267,7 @@
         
         <div class="control-section">
             <label> <strong> Piloto Automático: </strong></label>
-            <input type="checkbox" id="autoPilotToggle" onchange="toggleAutoMode(this.checked)">
+            <input type="checkbox" id="autoPilotToggle">
         </div>
 
         <div class="sidebar">
@@ -275,12 +275,15 @@
 
             <div class="input-group">
                 <div class="input-item">
-                    <label for="humidity">Umidade (%)</label>
-                    <input type="number" id="humidity" name="humidity" min="0" max="100" step="1" placeholder="Ex: 50%"/>
+                    <label for="humidity">Umidade</label>
+                    <select id="humidity" name="humidity">
+                        <option value="1">Úmido</option>
+                        <option value="0">Seco</option>
+                    </select>
                 </div>
                 <div class="input-item">
                     <label for="temperature">Temperatura (ºC)</label>
-                    <input type="number" id="temperature" name="temperature" min="-20" max="60" step="1" placeholder="Ex: 20ºC"/>
+                    <input type="number" id="temperature-min" name="temperature-min" min="-20" max="40" step="1" placeholder="Ex: 20ºC"/>
                 </div>
                 <div class="input-item">
                     <label for="luminosity">Luminosidade (%)</label>
@@ -292,21 +295,36 @@
 
     <script>
 
-        function toggleAutoMode(isChecked) {
+        autoPilotToggle.addEventListener('change', () => {
+            let isChecked = autoPilotToggle.checked;
+
             const humidityInput = document.getElementById('humidity');
-            const temperatureInput = document.getElementById('temperature');
+            const temperatureInput = document.getElementById('temperature-min');
             const luminosityInput = document.getElementById('luminosity');
-            
-            if (isChecked) {
-                humidityInput.disabled = true;
-                temperatureInput.disabled = true;
-                luminosityInput.disabled = true;
-            } else {
-                humidityInput.disabled = false;
-                temperatureInput.disabled = false;
-                luminosityInput.disabled = false;
+
+            console.log('typeof: ', typeof(temperatureInput));
+
+            if (
+                !humidityInput?.value || 
+                !temperatureInput?.value || 
+                !luminosityInput?.value
+            ) {
+                alert('Você deve preencher os valores padrão antes de iniciar o piloto automático');
+                autoPilotToggle.checked = false;
+                isChecked = false;
+                return;
             }
-        }
+
+            console.log('pilotoAutomatico: ', isChecked);
+            console.log('pilotoAutomatico: ', isChecked ? 'ON' : 'OFF');
+            console.log('Dados: ', `${humidityInput.value}, ${temperatureInput.value}, ${luminosityInput.value}`);
+
+            sendCommand('pilotoAutomatico', isChecked ? 'ON' : 'OFF');
+            sendCommand('opcoes', `${humidityInput.value}, ${temperatureInput.value}, ${luminosityInput.value}`);
+            console.log(isChecked);
+
+            toggleAutoMode(isChecked);
+        });
 
         function toggleControls() {
             const controlsPanel = document.getElementById('controlsPanel');
@@ -374,59 +392,64 @@
         }
     
         function sendCommand(endpoint, state) {
-            console.log(`Enviando comando para ${endpoint} com estado ${state}`);
-            fetch(`/${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ state }),
-            })
-            .then(response => response.ok ? console.log('Comando enviado!') : console.error('Erro ao enviar comando'))
-            .catch(console.error);
-        }
+        console.log(`Enviando comando para ${endpoint} com estado ${state}`);
+        fetch('/send_command', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                channel: endpoint,
+                command: state   
+            }),
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log('Comando enviado com sucesso!');
+            } else {
+                console.error('Erro ao enviar comando');
+            }
+        })
+        .catch(error => {
+            console.error('Erro na requisição:', error);
+        });
+    }
+
     
-        // Função para desabilitar o refrigerador quando o aquecedor for habilitado, e vice-versa
         function handleTemperatureControl() {
             const aquecedor = document.getElementById('aquecedor');
             const refrigerador = document.getElementById('refrigerador');
             
             if (aquecedor.checked) {
-                refrigerador.disabled = true; // Desabilita o refrigerador
-                refrigerador.checked = false; // Desmarca o refrigerador
+                refrigerador.disabled = true; 
+                refrigerador.checked = false; 
             } else {
-                refrigerador.disabled = false; // Habilita o refrigerador
+                refrigerador.disabled = false; 
             }
     
             if (refrigerador.checked) {
-                aquecedor.disabled = true; // Desabilita o aquecedor
-                aquecedor.checked = false; // Desmarca o aquecedor
+                aquecedor.disabled = true;
+                aquecedor.checked = false; 
             } else {
-                aquecedor.disabled = false; // Habilita o aquecedor
+                aquecedor.disabled = false;
             }
         }
     
-        // Adicionando evento para chamar a função quando o aquecedor ou refrigerador for alterado
         document.getElementById('aquecedor').addEventListener('change', handleTemperatureControl);
         document.getElementById('refrigerador').addEventListener('change', handleTemperatureControl);
     
-        // Função para alternar entre o modo Manual e Auto
         function toggleAutoMode(isAuto) {
             const controls = document.querySelectorAll("#irrigador, #aquecedor, #refrigerador, #lampada, #sensorAuto");
-    
             if (isAuto) {
-                // Se o modo Auto estiver ativado, desabilita os controles e desmarca as checkboxes
                 controls.forEach(control => {
                     control.disabled = true;
                     if (control.type === "checkbox") control.checked = false;
                 });
             } else {
-                // Se o modo Auto estiver desativado, habilita os controles
                 controls.forEach(control => {
                     control.disabled = false;
                 });
             }
         }
     
-        // Função para habilitar/desabilitar os inputs quando o "piloto automático" for alterado
         document.getElementById('sensorAuto').addEventListener('change', function () {
             const isAutoChecked = this.checked;
             toggleAutoMode(isAutoChecked);
