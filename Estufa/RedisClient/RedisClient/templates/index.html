@@ -277,8 +277,8 @@
                 <div class="input-item">
                     <label for="humidity">Umidade</label>
                     <select id="humidity" name="humidity">
-                        <option value="1">Úmido</option>
-                        <option value="0">Seco</option>
+                        <option value="0">Úmido</option>
+                        <option value="1">Seco</option>
                     </select>
                 </div>
                 <div class="input-item">
@@ -320,7 +320,9 @@
             console.log('Dados: ', `${humidityInput.value}, ${temperatureInput.value}, ${luminosityInput.value}`);
 
             sendCommand('pilotoAutomatico', isChecked ? 'ON' : 'OFF');
-            sendCommand('opcoes', `${humidityInput.value}, ${temperatureInput.value}, ${luminosityInput.value}`);
+            if(isChecked){
+                sendCommand('opcoes', `${humidityInput.value}, ${temperatureInput.value}, ${luminosityInput.value}`);
+            }
             console.log(isChecked);
 
             toggleAutoMode(isChecked);
