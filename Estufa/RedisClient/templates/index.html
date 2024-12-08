@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interface Web para Sensores</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .data-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 10px;
+            margin-top: 70px;
+        }
+
+        #atuadores {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .data {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px;
+            background-color: #ffffff;
+            overflow-y: auto;
+            border-radius: 5px;
+        }
+
+        .controls {
+            width: 250px;
+            padding: 20px;
+            background-color: #fff;
+            position: fixed;
+            right: -300px;
+            top: 0;
+            height: 100%;
+            overflow-y: auto;
+            transition: right 0.3s ease;
+            z-index: 1000;
+        }
+
+        .controls.open {
+            right: 0;
+            color: #000000;
+            background-color: rgba(231, 231, 231, 0.11); 
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .hamburger-menu {
+            position: fixed;
+            top: 10px;
+            right: 15px;
+            font-size: 48px;
+            cursor: pointer;
+            color: #000000;
+            z-index: 1001;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .sensor-temp,
+        .sensor-umi,
+        .sensor-lum {
+            margin-bottom: 15px;
+            background-color: #edfffe;
+            overflow-y: auto;
+            padding: 10px;
+            max-height: 350px;
+            border-radius: 5px;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #ffffff;
+            border-radius: 5px;
+            box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .toggle-button {
+            margin: 5px 0;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .toggle-button.on {
+            background-color: #4CAF50;
+        }
+
+        .toggle-button.off {
+            background-color: #f44336;
+        }
+
+        input[type="checkbox"] {
+            transform: scale(1.5);
+            margin-left: 10px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 5px;
+            margin: 5px 0;
+            box-sizing: border-box;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        select {
+            width: 100%;
+            padding: 5px;
+            margin: 5px 0;
+            box-sizing: border-box;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
+            }
+
+            .data-container {
+                margin-top: 0px;
+                max-height: 70vh;
+            }
+
+            .data {
+                min-width: 100%;
+                position: relative;
+                padding-top: 40px;
+            }
+
+            .data h2 {
+                position: sticky;
+                top: 0;
+                background-color: #fff;
+                z-index: 10;
+                margin: 0;
+                padding: 10px 0;
+            }
+
+            .sensor-temp,
+            .sensor-umi,
+            .sensor-lum {
+                margin-bottom: 10px;
+                background-color: #edfffe;
+                padding: 10px;
+                height: 40vw;
+                border-radius: 5px;
+                max-height: 40vw;
+                overflow-y: auto;
+                display: block;
+            }
+        }
+
+            button#save-limits {
+                display: block;
+                margin: 20px auto; 
+                padding: 15px 30px;
+                background-color: #007BFF; 
+                color: white;
+                font-size: 16px; 
+                font-weight: bold;
+                border: none; 
+                border-radius: 8px;
+                cursor: pointer; 
+                transition: background-color 0.3s ease;
+                box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); 
+            }
+
+            button#save-limits:hover {
+                background-color: #0056b3; 
+            }
+
+            button#save-limits:active {
+                background-color: #004080;
+            }
+
+    </style>
+</head>
+<body>
+    <div class="hamburger-menu" onclick="toggleControls()">☰</div>
+
+    <div class="data-container">
+        <div class="data">
+            <h2>Dados Temperatura</h2>
+            <div class="sensor-temp" id="sensorLogTemp"></div>
+        </div>
+        <div class="data">
+            <h2>Dados Umidade</h2>
+            <div class="sensor-umi" id="sensorLogUmi"></div>
+        </div>
+        <div class="data">
+            <h2>Dados Luminosidade</h2>
+            <div class="sensor-lum" id="sensorLogLum"></div>
+        </div>
+
+    </div>
+
+    <div class="controls" id="controlsPanel">
+        <h2>Controles</h2>
+
+        <div class="control-section">
+            <h3>Umidade</h3>
+            <button id="btn-irrigador" class="toggle-button off" onclick="toggleAtuador('toggleIrrigador', 'btn-irrigador')">Irrigador (OFF)</button>
+        </div>
+
+        <div class="control-section">
+            <h3>Temperatura</h3>
+            <button id="btn-aquecedor" class="toggle-button off" onclick="toggleAtuador('toggleAquecedor', 'btn-aquecedor')">Aquecedor (OFF)</button>
+            <button id="btn-refrigerador" class="toggle-button off" onclick="toggleAtuador('toggleRefrigerador', 'btn-refrigerador')">Refrigerador (OFF)</button>
+        </div>
+
+        <div class="control-section">
+            <h3>Luminosidade</h3>
+            <button id="btn-lampada" class="toggle-button off" onclick="toggleAtuador('toggleLampada', 'btn-lampada')">Lâmpada (OFF)</button>
+        </div>
+
+        <div class="control-section">
+            <label>Piloto Automático:</label>
+            <input type="checkbox" onchange="toggleAutoMode(this.checked)" disabled>
+        </div>
+        
+        <h3>Configurações de Limites</h3>
+        <div class="control-section">
+            <label for="humidity-limit">Umidade:</label>
+            <select id="humidity-limit">
+                <option value="1">Atuar quando molhado</option>
+                <option value="0">Atuar quando seco</option>
+            </select>
+        </div>
+        <div class="control-section">
+            <label for="temperature-limit">Temperatura em Celsius</label>
+            <input type="number" id="temperature-limit" min="-20" max="50" step="1" placeholder="Ex: 22"/>
+        </div>
+        <div class="control-section">
+            <label for="luminosity-limit">Luminosidade (Quanto maior o valor, mais escuro)</label>
+            <input type="number" id="luminosity-limit" min="0" max="1000" step="1" placeholder="Ex: 700"/>
+        </div>
+        <button id="save-limits" onclick="sendLimits()">Enviar Limites</button>
+    </div>
+
+<script>
+    function toggleControls() {
+        const controlsPanel = document.getElementById('controlsPanel');
+        controlsPanel.classList.toggle('open');
+    }
+
+    let interval = setInterval(fetchSensorData, 1000);
+
+    function fetchSensorData() {                            
+        console.log("Buscando dados do sensor...");
+        fetch('/get_data')
+            .then(response => {
+                if (!response.ok) throw new Error('Servidor indisponível');
+                return response.json();
+            })
+            .then(data => {
+                const sensorLogTemp = document.getElementById('sensorLogTemp');
+                const sensorLogUmi = document.getElementById('sensorLogUmi');
+                const sensorLogLum = document.getElementById('sensorLogLum');
+
+                const tempEntry = document.createElement('div');
+                tempEntry.classList.add('log-entry');
+                tempEntry.textContent = `Temperatura: ${data.readTemperatura}`;
+                sensorLogTemp.prepend(tempEntry);
+
+                const umiEntry = document.createElement('div');
+                umiEntry.classList.add('log-entry');
+                umiEntry.textContent = `Umidade: ${data.readUmidade}`;
+                sensorLogUmi.prepend(umiEntry);
+
+                const lumEntry = document.createElement('div');
+                lumEntry.classList.add('log-entry');
+                lumEntry.textContent = `Luminosidade: ${data.readLuminosidade}`;
+                sensorLogLum.prepend(lumEntry);
+
+                updateToggleButton('btn-irrigador', data.atuadores.estadoIrrigador, 'toggleIrrigador');
+                updateToggleButton('btn-aquecedor', data.atuadores.estadoAquecedor, 'toggleAquecedor');
+                updateToggleButton('btn-refrigerador', data.atuadores.estadoRefrigerador, 'toggleRefrigerador');
+                updateToggleButton('btn-lampada', data.atuadores.estadoLampada, 'toggleLampada');
+            })
+            .catch(error => {
+                console.error(error);
+                clearInterval(interval);
+                attemptReconnect();
+            });
+    }
+
+    function updateToggleButton(buttonId, estado, channel) {
+        const button = document.getElementById(buttonId);
+        if (estado === 'ON') {
+            button.classList.remove('off');
+            button.classList.add('on');
+            button.textContent = `${channel.split('toggle')[1]} (ON)`;
+        } else {
+            button.classList.remove('on');
+            button.classList.add('off');
+            button.textContent = `${channel.split('toggle')[1]} (OFF)`;
+        }
+    }
+
+    function attemptReconnect() {
+        setTimeout(() => {
+            console.log("Tentando reconectar...");
+            fetch('/get_data')
+                .then(response => {
+                    if (!response.ok) throw new Error('Servidor ainda indisponível');
+                    return response.json();
+                })
+                .then(() => {
+                    interval = setInterval(fetchSensorData, 1000);
+                    console.log("Reconexão bem-sucedida!");
+                })
+                .catch(() => {
+                    attemptReconnect();
+                });
+        }, 5000);
+    }
+
+    function toggleAtuador(channel, buttonId) {
+        if (document.querySelector('input[type="checkbox"]').checked) {
+            alert("Piloto automático está ativado. Não é possível alterar os atuadores manualmente.");
+            return;
+        }
+
+        const button = document.getElementById(buttonId);
+        const isOn = button.classList.contains('on');
+
+        const aquecedorLigado = document.getElementById('btn-aquecedor').classList.contains('on');
+        const refrigeradorLigado = document.getElementById('btn-refrigerador').classList.contains('on');
+
+        if (channel === 'toggleAquecedor' && refrigeradorLigado && !isOn) {
+            alert("Não é possível ligar o aquecedor enquanto o refrigerador está ligado.");
+            return;
+        } else if (channel === 'toggleRefrigerador' && aquecedorLigado && !isOn) {
+            alert("Não é possível ligar o refrigerador enquanto o aquecedor está ligado.");
+            return;
+        }
+
+        const command = isOn ? 'OFF' : 'ON';
+
+        sendCommand(channel, command);
+
+        if (isOn) {
+            button.classList.remove('on');
+            button.classList.add('off');
+            button.textContent = `${channel.split('toggle')[1]} (OFF)`;
+        } else {
+            button.classList.remove('off');
+            button.classList.add('on');
+            button.textContent = `${channel.split('toggle')[1]} (ON)`;
+        }
+    }
+
+    function sendCommand(channel, command) {
+        console.log("Enviando comando:", channel, command);
+        fetch('/send_command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channel: channel, command: command })
+        }).then(response => {
+            if (!response.ok) throw new Error('Falha ao enviar comando');
+            console.log("Comando enviado com sucesso!");
+        }).catch(error => console.error(error));
+    }
+
+    function toggleAutoMode(isEnabled) {   
+        console.log("Modo automático", isEnabled ? "ativado" : "desativado");
+        sendCommand('pilotoAutomatico', isEnabled ? 'ON' : 'OFF');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        checkLimitsStatus();
+    });
+
+    function checkLimitsStatus() {
+        fetch('/check_limits')
+            .then(response => response.json())
+            .then(data => {
+                const autoModeCheckbox = document.querySelector('input[type="checkbox"]');
+                autoModeCheckbox.disabled = !data.limitsSet; 
+            })
+            .catch(error => console.error('Erro ao verificar limites:', error));
+    }
+    
+    
+    function sendLimits() {
+        const humidityLimit = document.getElementById('humidity-limit').value;
+        const temperatureLimit = document.getElementById('temperature-limit').value;
+        const luminosityLimit = document.getElementById('luminosity-limit').value;
+
+        if (humidityLimit && temperatureLimit && luminosityLimit) {
+            const limitsString = `${humidityLimit},${temperatureLimit},${luminosityLimit}`;
+
+            fetch('/send_command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    channel: 'limitesAtuadores',
+                    command: limitsString
+                })
+            }).then(response => {
+                if (response.ok) {
+                    alert('Limites salvos com sucesso! Piloto Automatico liberado');
+                    checkLimitsStatus(); 
+                } else {
+                    alert('Erro ao salvar limites.');
+                }
+            }).catch(error => console.error('Erro ao salvar limites:', error));
+        } else {
+            alert('Preencha todos os campos de limite.');
+        }
+    }
+
+
+</script>
+</body>
+</html>
